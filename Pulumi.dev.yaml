@@ -1,0 +1,9 @@
+config:
+  azure-native:location: westeurope
+  kubernetes-azure-csharp:kubernetesVersion: 1.24.3
+  kubernetes-azure-csharp:mgmtGroupId: ""
+  kubernetes-azure-csharp:nodeVmSize: Standard_DS2_v2
+  kubernetes-azure-csharp:numWorkerNodes: "2"
+  kubernetes-azure-csharp:prefixForDns: pulumi
+  kubernetes-azure-csharp:sshPubKey: ""
+  pulumi:template: kubernetes-azure-csharp

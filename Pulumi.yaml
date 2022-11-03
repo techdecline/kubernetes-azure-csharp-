@@ -1,0 +1,3 @@
+name: kubernetes-azure-csharp
+description: A C# program to create a Kubernetes cluster on Azure
+runtime: dotnet
