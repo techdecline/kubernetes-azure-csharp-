@@ -15,7 +15,7 @@ return await Pulumi.Deployment.RunAsync(() =>
 
     // The next two configuration values are required (no default can be provided)
     var mgmtGroupId = projCfg.Require("mgmtGroupId");
-    var sshPubKey = projCfg.Require("sshPubKey");
+    var sshPubKey = projCfg.Get("sshPubKey");
 
     // Create a new Azure Resource Group
     var resourceGroup = new AzureNative.Resources.ResourceGroup("resourceGroup");
@@ -58,7 +58,7 @@ return await Pulumi.Deployment.RunAsync(() =>
     // Create an Azure Kubernetes Cluster
     var managedCluster = new AzureNative.ContainerService.ManagedCluster("managedCluster", new()
     {
-        AadProfile =new AzureNative.ContainerService.Inputs.ManagedClusterAADProfileArgs
+        AadProfile = new AzureNative.ContainerService.Inputs.ManagedClusterAADProfileArgs
         {
             EnableAzureRBAC = true,
             Managed = true,
@@ -67,7 +67,7 @@ return await Pulumi.Deployment.RunAsync(() =>
                 mgmtGroupId,
             },
         },
-        AddonProfiles = {},
+        AddonProfiles = { },
         // Use multiple agent/node pool profiles to distribute nodes across subnets
         AgentPoolProfiles = new AzureNative.ContainerService.Inputs.ManagedClusterAgentPoolProfileArgs
         {
@@ -135,7 +135,8 @@ return await Pulumi.Deployment.RunAsync(() =>
         ResourceName = managedCluster.Name,
     });
     var encoded = creds.Apply(result => result.Kubeconfigs[0]!.Value);
-    var decoded = encoded.Apply(enc => {
+    var decoded = encoded.Apply(enc =>
+    {
         var bytes = Convert.FromBase64String(enc);
         return Encoding.UTF8.GetString(bytes);
     });
