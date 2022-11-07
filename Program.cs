@@ -8,17 +8,23 @@ return await Pulumi.Deployment.RunAsync(() =>
 {
     // Grab some values from the Pulumi stack configuration (or use defaults)
     var projCfg = new Config();
+    var configAzureNative = new Pulumi.Config("azure-native");
     var numWorkerNodes = projCfg.GetInt32("numWorkerNodes") ?? 3;
     var k8sVersion = projCfg.Get("kubernetesVersion") ?? "1.24.3";
     var prefixForDns = projCfg.Get("prefixForDns") ?? "pulumi";
     var nodeVmSize = projCfg.Get("nodeVmSize") ?? "Standard_DS2_v2";
+    var location = configAzureNative.Get("location") ?? "westeurope";
 
     // The next two configuration values are required (no default can be provided)
     var mgmtGroupId = projCfg.Require("mgmtGroupId");
     var sshPubKey = projCfg.Require("sshPubKey");
 
+    // Generate Default Names
+    var commonArgs = new LandingZoneArgs(Pulumi.Deployment.Instance.StackName, location, "aks");
+    var resourceGroupName = $"rg-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+
     // Create a new Azure Resource Group
-    var resourceGroup = new AzureNative.Resources.ResourceGroup("resourceGroup");
+    var resourceGroup = new AzureNative.Resources.ResourceGroup(resourceGroupName);
 
     // Create a new Azure Virtual Network
     var virtualNetwork = new AzureNative.Network.VirtualNetwork("virtualNetwork", new()
