@@ -55,6 +55,28 @@ return await Pulumi.Deployment.RunAsync(() =>
         VirtualNetworkName = virtualNetwork.Name,
     });
 
+    // Create Grafana Dashboard
+    var grafana = new AzureNative.Dashboard.Grafana("grafana", new()
+    {
+        Identity = new AzureNative.Dashboard.Inputs.ManagedServiceIdentityArgs
+        {
+            Type = "SystemAssigned",
+        },
+        Properties = new AzureNative.Dashboard.Inputs.ManagedGrafanaPropertiesArgs
+        {
+            ApiKey = "Enabled",
+            DeterministicOutboundIP = "Enabled",
+            PublicNetworkAccess = "Enabled",
+            ZoneRedundancy = "Enabled",
+        },
+        ResourceGroupName = resourceGroup.Name,
+        Sku = new AzureNative.Dashboard.Inputs.ResourceSkuArgs
+        {
+            Name = "Standard",
+        },
+        WorkspaceName = "myWorkspace",
+    });
+
     // Create an Azure Kubernetes Cluster
     var managedCluster = new AzureNative.ContainerService.ManagedCluster("managedCluster", new()
     {
