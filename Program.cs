@@ -55,6 +55,17 @@ return await Pulumi.Deployment.RunAsync(() =>
         VirtualNetworkName = virtualNetwork.Name,
     });
 
+    // Create Log Analytics Workspace
+    var workspace = new AzureNative.OperationalInsights.Workspace("workspace", new()
+    {
+        ResourceGroupName = resourceGroup.Name,
+        RetentionInDays = 30,
+        Sku = new AzureNative.OperationalInsights.Inputs.WorkspaceSkuArgs
+        {
+            Name = "PerGB2018",
+        }
+    });
+
     // Create Grafana Dashboard
     var grafana = new AzureNative.Dashboard.Grafana("grafana", new()
     {
