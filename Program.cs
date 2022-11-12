@@ -102,7 +102,7 @@ return await Pulumi.Deployment.RunAsync(() =>
         },
         AddonProfiles =
         {
-            { "omaAgent", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
+            { "monitoring", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
             {
                 Config =
                 {
