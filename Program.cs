@@ -100,7 +100,17 @@ return await Pulumi.Deployment.RunAsync(() =>
                 mgmtGroupId,
             },
         },
-        AddonProfiles = { },
+        AddonProfiles =
+        {
+            { "omaAgent", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
+            {
+                Config =
+                {
+                    { "log_analytics_workspace_id", workspace.Id },
+                },
+                Enabled = true,
+            } },
+        },
         // Use multiple agent/node pool profiles to distribute nodes across subnets
         AgentPoolProfiles = new AzureNative.ContainerService.Inputs.ManagedClusterAgentPoolProfileArgs
         {
