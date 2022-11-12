@@ -102,11 +102,11 @@ return await Pulumi.Deployment.RunAsync(() =>
         },
         AddonProfiles =
         {
-            { "monitoring", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
+            { "omsagent", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
             {
                 Config =
                 {
-                    { "log_analytics_workspace_id", workspace.Id },
+                    { "logAnalyticsWorkspaceResourceID", workspace.Id },
                 },
                 Enabled = true,
             } },
