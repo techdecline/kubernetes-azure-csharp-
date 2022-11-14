@@ -1,5 +1,6 @@
 using Pulumi;
 using Pulumi.AzureAD;
+using Pulumi.Random;
 using AzureNative = Pulumi.AzureNative;
 using Pulumi.AzureNative.Authorization;
 using System.Collections.Generic;
@@ -84,11 +85,24 @@ class AksStack : Stack
         });
 
         // Create Grafana Dashboard
+
+        var userAssignedIdentityGrafana = new AzureNative.ManagedIdentity.UserAssignedIdentity("userAssignedIdentityGrafana", new()
+        {
+            ResourceGroupName = resourceGroup.Name,
+        });
         var grafana = new AzureNative.Dashboard.Grafana("grafana", new()
         {
             Identity = new AzureNative.Dashboard.Inputs.ManagedServiceIdentityArgs
             {
-                Type = "SystemAssigned",
+                Type = "UserAssigned",
+                UserAssignedIdentities = userAssignedIdentityGrafana.Id.Apply(id =>
+                {
+                    var im = new Dictionary<string, object>
+                    {
+                        { id, new Dictionary<string, object>() }
+                    };
+                    return im;
+                })
             },
             Properties = new AzureNative.Dashboard.Inputs.ManagedGrafanaPropertiesArgs
             {
@@ -105,15 +119,29 @@ class AksStack : Stack
             WorkspaceName = "myWorkspace",
         });
 
-        // Create Role Assignment
-        Guid roleAssignmentIdGuid = Guid.NewGuid();
+        // Create Role Assignment for Grafana Identity
+        var roleAssignmentGrafanaIdentityGuid = new Pulumi.Random.RandomUuid("guidRoleAssignmentGrafanaIdentity");
+
+
+        var roleAssignmentGrafanaIdentity = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaIdentity", new()
+        {
+            PrincipalId = userAssignedIdentityGrafana.PrincipalId,
+            PrincipalType = "ServicePrincipal",
+            RoleAssignmentName = roleAssignmentGrafanaIdentityGuid.Result,
+            RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/43d0d8ad-25c7-4714-9337-8ba259a9fe05"),
+            Scope = resourceGroup.Id,
+        });
+
+        // Create Role Assignment for Grafana Admins
+        // Guid roleAssignmentIdGuid = Guid.NewGuid();
+        var roleAssignmentGrafanaAdminGuid = new Pulumi.Random.RandomUuid("guidRoleAssignmentGrafanaAdmin");
         // Output<string> subscriptionId = resourceGroup.Id.Apply(id => id.Split('/')[2]);
 
-        var roleAssignment = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
+        var roleAssignmentGrafanaAdmin = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
         {
             PrincipalId = grafanaGroup.ObjectId,
             PrincipalType = "Group",
-            RoleAssignmentName = roleAssignmentIdGuid.ToString(),
+            RoleAssignmentName = roleAssignmentGrafanaAdminGuid.Result,
             RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e41"),
             Scope = grafana.Id,
         });
