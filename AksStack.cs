@@ -114,7 +114,7 @@ class AksStack : Stack
         {
             PrincipalId = grafanaGroup.ObjectId,
             PrincipalType = "Group",
-            RoleAssignmentName = roleAssignmentId,
+            RoleAssignmentName = roleAssignmentId.ToString(),
             RoleDefinitionId = roleDefinitionId,
             Scope = grafana.Id,
         });
