@@ -108,12 +108,13 @@ class AksStack : Stack
         });
 
         // Create Role Assignment
+        Guid roleAssignmentId = Guid.NewGuid();
         var roleDefinitionId = $"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412";
         var roleAssignment = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
         {
             PrincipalId = grafanaGroup.ObjectId,
             PrincipalType = "Group",
-            RoleAssignmentName = "Grafana Admin",
+            RoleAssignmentName = roleAssignmentId.ToString(),
             RoleDefinitionId = roleDefinitionId,
             Scope = grafana.Id,
         });
