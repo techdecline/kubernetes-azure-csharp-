@@ -10,8 +10,6 @@ class AksStack : Stack
 {
     public AksStack()
     {
-        var subscriptionId = Pulumi.AzureNative.Config.SubscriptionId;
-
         // Grab some values from the Pulumi stack configuration (or use defaults)
         var projCfg = new Pulumi.Config();
         var numWorkerNodes = projCfg.GetInt32("numWorkerNodes") ?? 3;
@@ -109,13 +107,17 @@ class AksStack : Stack
 
         // Create Role Assignment
         Guid roleAssignmentId = Guid.NewGuid();
-        var roleDefinitionId = $"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412";
+        Output<string> subscriptionId = resourceGroup.Id.Apply(id => id.Split('/')[2]);
+
+        // var roleDefinitionId = $"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412";
+        var roleDefinitionId = Output.Format($"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412");
+        Console.WriteLine(roleDefinitionId);
         var roleAssignment = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
         {
             PrincipalId = grafanaGroup.ObjectId,
             PrincipalType = "Group",
             RoleAssignmentName = roleAssignmentId.ToString(),
-            RoleDefinitionId = roleDefinitionId,
+            RoleDefinitionId = Output.Format($"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412"),
             Scope = grafana.Id,
         });
 
