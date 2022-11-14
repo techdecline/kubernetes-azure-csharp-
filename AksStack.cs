@@ -218,13 +218,14 @@ class AksStack : Stack
             return Encoding.UTF8.GetString(bytes);
         });
 
-        // Export some values for use elsewhere
-        return new Dictionary<string, object?>
-        {
-            ["rgName"] = resourceGroup.Name,
-            ["networkName"] = virtualNetwork.Name,
-            ["clusterName"] = managedCluster.Name,
-            ["kubeconfig"] = decoded,
-        };
     }
+
+    // Export some values for use elsewhere
+    return new Dictionary<string, object?>
+    {
+        ["rgName"] = resourceGroup.Name,
+        ["networkName"] = virtualNetwork.Name,
+        ["clusterName"] = managedCluster.Name,
+        ["kubeconfig"] = decoded,
+    };
 }
