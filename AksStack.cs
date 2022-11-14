@@ -114,7 +114,7 @@ class AksStack : Stack
             PrincipalId = grafanaGroup.ObjectId,
             PrincipalType = "Group",
             RoleAssignmentName = roleAssignmentIdGuid.ToString(),
-            RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412"),
+            RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e41"),
             Scope = grafana.Id,
         });
 
