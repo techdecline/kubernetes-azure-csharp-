@@ -1,13 +1,17 @@
 ﻿using Pulumi;
+using Pulumi.AzureAD;
 using AzureNative = Pulumi.AzureNative;
+using Pulumi.AzureNative.Authorization;
 using System.Collections.Generic;
 using System.Text;
 using System;
 
 return await Pulumi.Deployment.RunAsync(() =>
 {
+    var subscriptionId = Pulumi.AzureNative.Config.SubscriptionId;
+
     // Grab some values from the Pulumi stack configuration (or use defaults)
-    var projCfg = new Config();
+    var projCfg = new Pulumi.Config();
     var numWorkerNodes = projCfg.GetInt32("numWorkerNodes") ?? 3;
     var k8sVersion = projCfg.Get("kubernetesVersion") ?? "1.24.3";
     var prefixForDns = projCfg.Get("prefixForDns") ?? "pulumi";
@@ -66,6 +70,23 @@ return await Pulumi.Deployment.RunAsync(() =>
         }
     });
 
+
+    // Create Grafana Group
+    var current = Pulumi.AzureAD.GetClientConfig.InvokeAsync();
+    var grafanaGroup = new Pulumi.AzureAD.Group("Grafana Admin Group", new()
+    {
+        DisplayName = "Grafana Admin Group",
+        Owners = new[]
+        {
+            mgmtGroupId,
+        },
+        SecurityEnabled = true,
+        Members = new[]
+        {
+            mgmtGroupId,
+        },
+    });
+
     // Create Grafana Dashboard
     var grafana = new AzureNative.Dashboard.Grafana("grafana", new()
     {
@@ -86,6 +107,17 @@ return await Pulumi.Deployment.RunAsync(() =>
             Name = "Standard",
         },
         WorkspaceName = "myWorkspace",
+    });
+
+    // Create Role Assignment
+    var roleDefinitionId = $"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412";
+    var roleAssignment = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
+    {
+        PrincipalId = grafanaGroup.ObjectId,
+        PrincipalType = "Group",
+        RoleAssignmentName = "Grafana Admin",
+        RoleDefinitionId = roleDefinitionId,
+        Scope = "subscriptions/a925f2f7-5c63-4b7b-8799-25a5f97bc3b2/resourceGroups/testrg/providers/Microsoft.DocumentDb/databaseAccounts/test-db-account",
     });
 
     // Create an Azure Kubernetes Cluster
