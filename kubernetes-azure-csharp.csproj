@@ -11,6 +11,10 @@
     <PackageReference Include="Pulumi.AzureAD" Version="5.31.0" />
     <PackageReference Include="Pulumi.AzureNative" Version="1.*" />
     <PackageReference Include="Pulumi.Tls" Version="4.6.1" />
+    <PackageReference Include="PulumiCSharpAnalyzer" Version="0.1.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>
