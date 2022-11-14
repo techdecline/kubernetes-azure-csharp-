@@ -78,10 +78,6 @@ class AksStack : Stack
         var grafanaGroup = new Pulumi.AzureAD.Group("Grafana Admin Group", new()
         {
             DisplayName = "Grafana Admin Group",
-            Owners = new[]
-            {
-            mgmtGroupId,
-        },
             SecurityEnabled = true,
             Members = new[]
             {
