@@ -106,18 +106,15 @@ class AksStack : Stack
         });
 
         // Create Role Assignment
-        Guid roleAssignmentId = Guid.NewGuid();
-        Output<string> subscriptionId = resourceGroup.Id.Apply(id => id.Split('/')[2]);
+        Guid roleAssignmentIdGuid = Guid.NewGuid();
+        // Output<string> subscriptionId = resourceGroup.Id.Apply(id => id.Split('/')[2]);
 
-        // var roleDefinitionId = $"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412";
-        var roleDefinitionId = Output.Format($"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412");
-        Console.WriteLine(roleDefinitionId);
         var roleAssignment = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
         {
             PrincipalId = grafanaGroup.ObjectId,
             PrincipalType = "Group",
-            RoleAssignmentName = roleAssignmentId.ToString(),
-            RoleDefinitionId = Output.Format($"/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412"),
+            RoleAssignmentName = roleAssignmentIdGuid.ToString(),
+            RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e412"),
             Scope = grafana.Id,
         });
 
