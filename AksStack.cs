@@ -30,7 +30,7 @@ class AksStack : Stack
         var vnetName = $"vnet-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
         var clusterName = $"aks-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
         var lawName = $"law-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
-        var managedGrafanaName = $"grafana-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+        var managedGrafanaName = $"grf-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
 
 
         // Create a new Azure Resource Group
