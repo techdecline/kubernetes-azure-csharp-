@@ -13,20 +13,31 @@ class AksStack : Stack
     {
         // Grab some values from the Pulumi stack configuration (or use defaults)
         var projCfg = new Pulumi.Config();
+        var configAzureNative = new Pulumi.Config("azure-native");
         var numWorkerNodes = projCfg.GetInt32("numWorkerNodes") ?? 3;
         var k8sVersion = projCfg.Get("kubernetesVersion") ?? "1.24.3";
         var prefixForDns = projCfg.Get("prefixForDns") ?? "pulumi";
         var nodeVmSize = projCfg.Get("nodeVmSize") ?? "Standard_DS2_v2";
+        var location = configAzureNative.Require("location");
+        var commonArgs = new LandingZoneArgs(Pulumi.Deployment.Instance.StackName, location, "aks");
 
         // The next two configuration values are required (no default can be provided)
         var mgmtGroupId = projCfg.Require("mgmtGroupId");
         var sshPubKey = projCfg.Require("sshPubKey");
 
+        // Generate Names
+        var resourceGroupName = $"rg-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+        var vnetName = $"vnet-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+        var clusterName = $"aks-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+        var lawName = $"law-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+        var managedGrafanaName = $"grafana-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+
+
         // Create a new Azure Resource Group
-        var resourceGroup = new AzureNative.Resources.ResourceGroup("resourceGroup");
+        var resourceGroup = new AzureNative.Resources.ResourceGroup(resourceGroupName);
 
         // Create a new Azure Virtual Network
-        var virtualNetwork = new AzureNative.Network.VirtualNetwork("virtualNetwork", new()
+        var virtualNetwork = new AzureNative.Network.VirtualNetwork(vnetName, new()
         {
             AddressSpace = new AzureNative.Network.Inputs.AddressSpaceArgs
             {
@@ -61,7 +72,7 @@ class AksStack : Stack
         });
 
         // Create Log Analytics Workspace
-        var workspace = new AzureNative.OperationalInsights.Workspace("workspace", new()
+        var workspace = new AzureNative.OperationalInsights.Workspace(lawName, new()
         {
             ResourceGroupName = resourceGroup.Name,
             RetentionInDays = 30,
@@ -90,7 +101,7 @@ class AksStack : Stack
         {
             ResourceGroupName = resourceGroup.Name,
         });
-        var grafana = new AzureNative.Dashboard.Grafana("grafana", new()
+        var grafana = new AzureNative.Dashboard.Grafana(managedGrafanaName, new()
         {
             Identity = new AzureNative.Dashboard.Inputs.ManagedServiceIdentityArgs
             {
@@ -116,7 +127,8 @@ class AksStack : Stack
             {
                 Name = "Standard",
             },
-            WorkspaceName = "myWorkspace",
+            // WorkspaceName = "myWorkspace",
+            // WorkspaceName = managedGrafanaName,
         });
 
         // Create Role Assignment for Grafana Identity
@@ -147,7 +159,7 @@ class AksStack : Stack
         });
 
         // Create an Azure Kubernetes Cluster
-        var managedCluster = new AzureNative.ContainerService.ManagedCluster("managedCluster", new()
+        var managedCluster = new AzureNative.ContainerService.ManagedCluster(clusterName, new()
         {
             AadProfile = new AzureNative.ContainerService.Inputs.ManagedClusterAADProfileArgs
             {
