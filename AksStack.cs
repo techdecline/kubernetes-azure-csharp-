@@ -36,6 +36,8 @@ class AksStack : Stack
         // Create a new Azure Resource Group
         var resourceGroup = new AzureNative.Resources.ResourceGroup(resourceGroupName);
 
+        var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, resourceGroup.Name);
+
         // Create a new Azure Virtual Network
         var virtualNetwork = new AzureNative.Network.VirtualNetwork(vnetName, new()
         {
@@ -71,92 +73,7 @@ class AksStack : Stack
             VirtualNetworkName = virtualNetwork.Name,
         });
 
-        // Create Log Analytics Workspace
-        var workspace = new AzureNative.OperationalInsights.Workspace(lawName, new()
-        {
-            ResourceGroupName = resourceGroup.Name,
-            RetentionInDays = 30,
-            Sku = new AzureNative.OperationalInsights.Inputs.WorkspaceSkuArgs
-            {
-                Name = "PerGB2018",
-            }
-        });
 
-
-        // Create Grafana Group
-        var current = Pulumi.AzureAD.GetClientConfig.InvokeAsync();
-        var grafanaGroup = new Pulumi.AzureAD.Group("Grafana Admin Group", new()
-        {
-            DisplayName = "Grafana Admin Group",
-            SecurityEnabled = true,
-            Members = new[]
-            {
-            mgmtGroupId,
-        },
-        });
-
-        // Create Grafana Dashboard
-
-        var userAssignedIdentityGrafana = new AzureNative.ManagedIdentity.UserAssignedIdentity("userAssignedIdentityGrafana", new()
-        {
-            ResourceGroupName = resourceGroup.Name,
-        });
-        var grafana = new AzureNative.Dashboard.Grafana(managedGrafanaName, new()
-        {
-            Identity = new AzureNative.Dashboard.Inputs.ManagedServiceIdentityArgs
-            {
-                Type = "UserAssigned",
-                UserAssignedIdentities = userAssignedIdentityGrafana.Id.Apply(id =>
-                {
-                    var im = new Dictionary<string, object>
-                    {
-                        { id, new Dictionary<string, object>() }
-                    };
-                    return im;
-                })
-            },
-            Properties = new AzureNative.Dashboard.Inputs.ManagedGrafanaPropertiesArgs
-            {
-                ApiKey = "Enabled",
-                DeterministicOutboundIP = "Enabled",
-                PublicNetworkAccess = "Enabled",
-                ZoneRedundancy = "Enabled",
-            },
-            ResourceGroupName = resourceGroup.Name,
-            Sku = new AzureNative.Dashboard.Inputs.ResourceSkuArgs
-            {
-                Name = "Standard",
-            },
-            // WorkspaceName = "myWorkspace",
-            // WorkspaceName = managedGrafanaName,
-        });
-
-        // Create Role Assignment for Grafana Identity
-        var roleAssignmentGrafanaIdentityGuid = new Pulumi.Random.RandomUuid("guidRoleAssignmentGrafanaIdentity");
-
-
-        var roleAssignmentGrafanaIdentity = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaIdentity", new()
-        {
-            PrincipalId = userAssignedIdentityGrafana.PrincipalId,
-            PrincipalType = "ServicePrincipal",
-            RoleAssignmentName = roleAssignmentGrafanaIdentityGuid.Result,
-            RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/43d0d8ad-25c7-4714-9337-8ba259a9fe05"),
-            Scope = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}"),
-        });
-
-        // Create Role Assignment for Grafana Admins
-        // Guid roleAssignmentIdGuid = Guid.NewGuid();
-        var roleAssignmentGrafanaAdminGuid = new Pulumi.Random.RandomUuid("guidRoleAssignmentGrafanaAdmin");
-        // Output<string> subscriptionId = resourceGroup.Id.Apply(id => id.Split('/')[2]);
-
-        var roleAssignmentGrafanaAdmin = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
-        {
-            PrincipalId = grafanaGroup.ObjectId,
-            PrincipalType = "Group",
-            RoleAssignmentName = roleAssignmentGrafanaAdminGuid.Result,
-            RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/22926164-76b3-42b3-bc55-97df8dab3e41"),
-            Scope = grafana.Id,
-        });
 
         // Create an Azure Kubernetes Cluster
         var managedCluster = new AzureNative.ContainerService.ManagedCluster(clusterName, new()
@@ -176,7 +93,7 @@ class AksStack : Stack
             {
                 Config =
                 {
-                    { "logAnalyticsWorkspaceResourceID", workspace.Id },
+                    { "logAnalyticsWorkspaceResourceID", monitoring.LogAnalyticsWorkspaceId },
                 },
                 Enabled = true,
             } },
