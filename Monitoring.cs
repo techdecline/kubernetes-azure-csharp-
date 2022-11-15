@@ -44,7 +44,7 @@ class Monitoring
         var roleAssignmentGrafanaIdentity = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaIdentity", new()
         {
             PrincipalId = grafana.Identity.Apply(opts => opts.PrincipalId),
-            PrincipalType = "Group",
+            PrincipalType = "ServicePrincipal",
             RoleAssignmentName = roleAssignmentGrafanaIdentityGuid.Result,
             RoleDefinitionId = Output.Format($"/subscriptions/{grafana.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/43d0d8ad-25c7-4714-9337-8ba259a9fe05"), // Monitoring Reader
             Scope = Output.Format($"/subscriptions/{grafana.Id.Apply(id => id.Split('/')[2])}"),
