@@ -41,7 +41,7 @@ class Monitoring
         // Create Role Assignment for Grafana Identity
         var roleAssignmentGrafanaIdentityGuid = new Pulumi.Random.RandomUuid("guidRoleAssignmentGrafanaIdentity");
 
-        var roleAssignmentGrafanaIdentity = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaAdmin", new()
+        var roleAssignmentGrafanaIdentity = new AzureNative.Authorization.RoleAssignment("roleAssignmentGrafanaIdentity", new()
         {
             PrincipalId = grafana.Identity.Apply(opts => opts.PrincipalId),
             PrincipalType = "Group",
