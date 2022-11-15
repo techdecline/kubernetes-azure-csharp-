@@ -129,7 +129,7 @@ class AksStack : Stack
             PrincipalType = "ServicePrincipal",
             RoleAssignmentName = roleAssignmentGrafanaIdentityGuid.Result,
             RoleDefinitionId = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}/providers/Microsoft.Authorization/roleDefinitions/43d0d8ad-25c7-4714-9337-8ba259a9fe05"),
-            Scope = resourceGroup.Id,
+            Scope = Output.Format($"/subscriptions/{resourceGroup.Id.Apply(id => id.Split('/')[2])}"),
         });
 
         // Create Role Assignment for Grafana Admins
