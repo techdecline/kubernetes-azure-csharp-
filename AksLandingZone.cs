@@ -5,11 +5,12 @@ using AzureNative = Pulumi.AzureNative;
 using Pulumi.AzureNative.Authorization;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System;
 
-class AksStack : Stack
+class AksLandingZone : Stack
 {
-    public AksStack()
+    public AksLandingZone()
     {
         // Grab some values from the Pulumi stack configuration (or use defaults)
         var projCfg = new Pulumi.Config();
@@ -24,6 +25,8 @@ class AksStack : Stack
         // The next two configuration values are required (no default can be provided)
         var mgmtGroupId = projCfg.Require("mgmtGroupId");
         var sshPubKey = projCfg.Require("sshPubKey");
+        var subnetArr = projCfg.RequireObject<JsonElement>("subnets");
+        var vnetCidr = projCfg.Require("virtual-network-cidr");
 
         // Generate Names
         var resourceGroupName = $"rg-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
@@ -32,47 +35,9 @@ class AksStack : Stack
         var lawName = $"law-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
         var managedGrafanaName = $"grf-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
 
-
-        // Create a new Azure Resource Group
-        var resourceGroup = new AzureNative.Resources.ResourceGroup(resourceGroupName);
-
-        var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, resourceGroup.Name);
-
-        // Create a new Azure Virtual Network
-        var virtualNetwork = new AzureNative.Network.VirtualNetwork(vnetName, new()
-        {
-            AddressSpace = new AzureNative.Network.Inputs.AddressSpaceArgs
-            {
-                AddressPrefixes = new[]
-                {
-                "10.0.0.0/16",
-            },
-            },
-            ResourceGroupName = resourceGroup.Name,
-        });
-
-        // Create three subnets in the virtual network
-        var subnet1 = new AzureNative.Network.Subnet("subnet1", new()
-        {
-            AddressPrefix = "10.0.0.0/22",
-            ResourceGroupName = resourceGroup.Name,
-            VirtualNetworkName = virtualNetwork.Name,
-        });
-
-        var subnet2 = new AzureNative.Network.Subnet("subnet2", new()
-        {
-            AddressPrefix = "10.0.4.0/22",
-            ResourceGroupName = resourceGroup.Name,
-            VirtualNetworkName = virtualNetwork.Name,
-        });
-
-        var subnet3 = new AzureNative.Network.Subnet("subnet3", new()
-        {
-            AddressPrefix = "10.0.8.0/22",
-            ResourceGroupName = resourceGroup.Name,
-            VirtualNetworkName = virtualNetwork.Name,
-        });
-
+        // Instantiate LandingZone Class for Resource Group and Virtual Network
+        var landingZone = new LandingZone(resourceGroupName, vnetCidr, vnetName, subnetArr);
+        var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, landingZone.ResourceGroupName);
 
 
         // Create an Azure Kubernetes Cluster
@@ -155,13 +120,13 @@ class AksStack : Stack
                 ServiceCidr = "10.96.0.0/16",
                 DnsServiceIP = "10.96.0.10",
             },
-            ResourceGroupName = resourceGroup.Name,
+            ResourceGroupName = resourceGroupName,
         });
 
         // Build a Kubeconfig to access the cluster
         var creds = AzureNative.ContainerService.ListManagedClusterUserCredentials.Invoke(new()
         {
-            ResourceGroupName = resourceGroup.Name,
+            ResourceGroupName = resourceGroupName,
             ResourceName = managedCluster.Name,
         });
         var encoded = creds.Apply(result => result.Kubeconfigs[0]!.Value);
@@ -174,15 +139,6 @@ class AksStack : Stack
 
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
-
-        // Export some values for use elsewhere
-        var aksDictionary = new Dictionary<string, object?>
-        {
-            ["rgName"] = resourceGroup.Name,
-            ["networkName"] = virtualNetwork.Name,
-            ["clusterName"] = managedCluster.Name,
-            ["kubeconfig"] = decoded,
-        };
     }
 
     [Output] public Output<string> KubeConfig { get; set; }
