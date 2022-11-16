@@ -39,6 +39,39 @@ class AksLandingZone : Stack
         var landingZone = new LandingZone(resourceGroupName, vnetCidr, vnetName, subnetArr);
         var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, landingZone.ResourceGroupName);
 
+        // look for aks subnet by name
+        string aksSubnet = string.Empty;
+        foreach (var subnet in subnetArr.EnumerateArray())
+        {
+            if (subnet.GetProperty("name").GetString().Contains("aks"))
+            {
+                Pulumi.Log.Info($"Subnet {subnet.GetProperty("name").GetString()} will be used for AKS");
+                aksSubnet = subnet.GetProperty("name").GetString();
+                break;
+            }
+        }
+
+        // Agent Pool 
+        var agentPoolProfiles = new AzureNative.ContainerService.Inputs.ManagedClusterAgentPoolProfileArgs
+        {
+            AvailabilityZones = new[]
+                {
+                "1", "2", "3",
+            },
+            Count = numWorkerNodes,
+            EnableNodePublicIP = false,
+            Mode = "System",
+            Name = "systempool",
+            OsType = "Linux",
+            OsDiskSizeGB = 30,
+            Type = "VirtualMachineScaleSets",
+            VmSize = nodeVmSize,
+        };
+
+        if (!string.IsNullOrEmpty(aksSubnet))
+        {
+            agentPoolProfiles.VnetSubnetID = Output.Format($"{SubnetDictionary.Apply(subnet => subnet[aksSubnet])}");
+        }
 
         // Create an Azure Kubernetes Cluster
         var managedCluster = new AzureNative.ContainerService.ManagedCluster(clusterName, new()
@@ -64,6 +97,7 @@ class AksLandingZone : Stack
             } },
         },
             // Use multiple agent/node pool profiles to distribute nodes across subnets
+<<<<<<< Updated upstream
             AgentPoolProfiles = new AzureNative.ContainerService.Inputs.ManagedClusterAgentPoolProfileArgs
             {
                 AvailabilityZones = new[]
@@ -81,6 +115,9 @@ class AksLandingZone : Stack
                 // Change next line for additional node pools to distribute across subnets
                 // VnetSubnetID = subnet1.Id,
             },
+=======
+            AgentPoolProfiles = agentPoolProfiles,
+>>>>>>> Stashed changes
 
             // Change authorizedIPRanges to limit access to API server
             // Changing enablePrivateCluster requires alternate access to API server (VPN or similar)
@@ -136,7 +173,10 @@ class AksLandingZone : Stack
             return Encoding.UTF8.GetString(bytes);
         });
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
     }
