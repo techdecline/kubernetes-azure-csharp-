@@ -4,6 +4,7 @@ using Pulumi.Random;
 using AzureNative = Pulumi.AzureNative;
 using Pulumi.AzureNative.Authorization;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
 using System;
@@ -78,8 +79,7 @@ class AksLandingZone : Stack
                 OsDiskSizeGB = 30,
                 Type = "VirtualMachineScaleSets",
                 VmSize = nodeVmSize,
-                // Change next line for additional node pools to distribute across subnets
-                // VnetSubnetID = subnet1.Id,
+                // VnetSubnetID = landingZone.SubnetDictionary["asd"].,
             },
 
             // Change authorizedIPRanges to limit access to API server
@@ -136,11 +136,15 @@ class AksLandingZone : Stack
             return Encoding.UTF8.GetString(bytes);
         });
 
-
+        var subnetId = Output.Format($"{landingZone.SubnetDictionary.Apply(obj => obj["aks_subnet"])}");
+        Pulumi.Log.Info($"AKS Subnet Id: {subnetId}");
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
+        SubnetDictionary = landingZone.SubnetDictionary;
     }
 
     [Output] public Output<string> KubeConfig { get; set; }
     [Output] public Output<string> ClusterName { get; set; }
+
+    [Output] public Output<ImmutableDictionary<string, object>> SubnetDictionary { get; set; }
 }
