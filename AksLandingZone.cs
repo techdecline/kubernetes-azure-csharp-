@@ -120,13 +120,13 @@ class AksLandingZone : Stack
                 ServiceCidr = "10.96.0.0/16",
                 DnsServiceIP = "10.96.0.10",
             },
-            ResourceGroupName = resourceGroupName,
+            ResourceGroupName = landingZone.ResourceGroupName,
         });
 
         // Build a Kubeconfig to access the cluster
         var creds = AzureNative.ContainerService.ListManagedClusterUserCredentials.Invoke(new()
         {
-            ResourceGroupName = resourceGroupName,
+            ResourceGroupName = landingZone.ResourceGroupName,
             ResourceName = managedCluster.Name,
         });
         var encoded = creds.Apply(result => result.Kubeconfigs[0]!.Value);
