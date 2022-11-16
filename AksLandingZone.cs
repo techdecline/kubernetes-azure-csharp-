@@ -137,7 +137,7 @@ class AksLandingZone : Stack
         });
 
         var subnetId = landingZone.SubnetDictionary.Apply(obj => obj["aks_subnet"]);
-        Pulumi.Log($"AKS Subnet Id: {subnetId}");
+        Pulumi.Log.Info($"AKS Subnet Id: {subnetId}");
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
         SubnetDictionary = landingZone.SubnetDictionary;
