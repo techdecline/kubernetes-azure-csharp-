@@ -8,8 +8,8 @@ config:
   kubernetes-azure-csharp:sshPubKey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDc+4qth56Z1/7jCWFTOneRCYHygHM7/duBKN/A18TvtKASyi4BlKk8OIWYD3fJ2BOGWjmR66OelwTqM/agmTvayymcLjbRcHIaO+qyW0u7CiPoa/Frw1JYOV1xHsc/hBkFusS8K9vAxBY2HtDQhdjcK3nD10nFutfLnA5lWcqJREp0CkzXVAqFrAbaDAkGnqLpLCE5w5C3hlZeA1btusiNcnqqh+jwEXx4KZZE2awLD1TJIhw0i3z70FpvPfED29GnequoBLUNGER2HSlqzlksM/SW2dgzoh8L0f9cwBE5ZtdSM9dED/37gdOUr0uC3K0ocM0Px8k1/3P+fBGbRoSaSbBQooZDEzcru4Aofk8CMKY+YhmnMD+KJxcFLP3g4Q3zB0qHB1ODAL16ojQcIjbXmJYUuZ80oBzwz+7oJhAtbkuR5rj+9Y3ArK8ALvLdPZ8VaCaBLKgJJhvb9//O9/2Tj2X+L/V/jYL9QollpCbadY4AlTVIqDeaGnNnFy6Nsu0=
   kubernetes-azure-csharp:subnets:
   - cidr: 10.0.0.0/22
-    name: shared-subnet
+    name: shared_subnet
   - cidr: 10.0.4.0/22
-    name: aks-subnet
+    name: aks_subnet
   kubernetes-azure-csharp:virtual-network-cidr: 10.0.0.0/16
   pulumi:template: kubernetes-azure-csharp
