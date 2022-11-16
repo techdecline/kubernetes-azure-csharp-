@@ -1,6 +1,7 @@
 using Pulumi;
 using AzureNative = Pulumi.AzureNative;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text.Json;
 class LandingZone
 {
@@ -22,23 +23,27 @@ class LandingZone
             ResourceGroupName = resourceGroup.Name,
         });
 
-        List<AzureNative.Network.Subnet> subnetObj = new List<AzureNative.Network.Subnet>();
+        ImmutableDictionary<string, object>.Builder outputBuilder = ImmutableDictionary.CreateBuilder<string, object>();
+
         foreach (var subnet in subnetConfig.EnumerateArray())
         {
-            subnetObj.Add(new AzureNative.Network.Subnet(subnet.GetProperty("name").GetString(), new()
+            var subnetObj = new AzureNative.Network.Subnet(subnet.GetProperty("name").GetString(), new()
             {
                 AddressPrefix = subnet.GetProperty("cidr").GetString(),
                 ResourceGroupName = resourceGroup.Name,
                 VirtualNetworkName = virtualNetwork.Name,
-            }));
+            });
+
+            outputBuilder.Add(subnet.GetProperty("name").GetString(), subnetObj.Id);
         }
-        var subnets = new Dictionary<string, int>();
 
         // Map outputs
         ResourceGroupName = resourceGroup.Name;
         VirtualNetworkId = virtualNetwork.Id;
+        SubnetDictionary = Output.Create(outputBuilder.ToImmutable());
     }
 
     [Output] public Output<string> ResourceGroupName { get; set; }
     [Output] public Output<string> VirtualNetworkId { get; set; }
+    [Output] public Output<ImmutableDictionary<string, object>> SubnetDictionary { get; set; }
 }
