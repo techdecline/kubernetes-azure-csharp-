@@ -76,11 +76,12 @@ class AksLandingZone : Stack
             VmSize = nodeVmSize,
         };
 
-        //if (!string.IsNullOrEmpty(aksSubnet))
-        //{
-        //    Pulumi.Log.Info($"SubnetId for AgentPool: {landingZone.SubnetDictionary.Apply(subnet => subnet[aksSubnet])}");
-        //    agentPoolProfiles.VnetSubnetID = Output.Format($"{landingZone.SubnetDictionary.Apply(subnet => subnet[aksSubnet])}");
-        //}
+        if (!string.IsNullOrEmpty(aksSubnet))
+        {
+            var subnetId = landingZone.SubnetDictionary.Apply(subnetId => subnetId[aksSubnet]);
+            Pulumi.Log.Info($"SubnetId for AgentPool: {subnetId}");
+            agentPoolProfiles.VnetSubnetID = subnetId;
+        }
 
         // Create an Azure Kubernetes Cluster
         var managedCluster = new AzureNative.ContainerService.ManagedCluster(clusterName, new()
