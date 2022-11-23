@@ -23,7 +23,7 @@ class LandingZone
             ResourceGroupName = resourceGroup.Name,
         });
 
-        ImmutableDictionary<string, object>.Builder outputBuilder = ImmutableDictionary.CreateBuilder<string, object>();
+        ImmutableDictionary<string, Output<string>>.Builder outputBuilder = ImmutableDictionary.CreateBuilder<string, Output<string>>();
 
         foreach (var subnet in subnetConfig.EnumerateArray())
         {
@@ -34,7 +34,7 @@ class LandingZone
                 VirtualNetworkName = virtualNetwork.Name,
             });
 
-            outputBuilder.Add(subnet.GetProperty("name").GetString(), subnetObj.Id);
+            outputBuilder.Add(subnet.GetProperty("name").GetString(), subnetObj.Id.Apply(id => id));
         }
 
         // Map outputs
@@ -45,5 +45,5 @@ class LandingZone
 
     [Output] public Output<string> ResourceGroupName { get; set; }
     [Output] public Output<string> VirtualNetworkId { get; set; }
-    [Output] public Output<ImmutableDictionary<string, object>> SubnetDictionary { get; set; }
+    [Output] public Output<ImmutableDictionary<string, Output<string>>> SubnetDictionary { get; set; }
 }
