@@ -7,11 +7,19 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using System;
+using System.Threading;
+using System.Diagnostics;
+using System.Collections.Immutable;
 
 class AksLandingZone : Stack
 {
     public AksLandingZone()
     {
+        // Enable Debugger
+        //while (!Debugger.IsAttached)
+        //{
+        //    Thread.Sleep(100);
+        //}
         // Grab some values from the Pulumi stack configuration (or use defaults)
         var projCfg = new Pulumi.Config();
         var configAzureNative = new Pulumi.Config("azure-native");
@@ -68,10 +76,11 @@ class AksLandingZone : Stack
             VmSize = nodeVmSize,
         };
 
-        if (!string.IsNullOrEmpty(aksSubnet))
-        {
-            agentPoolProfiles.VnetSubnetID = Output.Format($"{landingZone.SubnetDictionary.Apply(subnet => subnet[aksSubnet])}");
-        }
+        //if (!string.IsNullOrEmpty(aksSubnet))
+        //{
+        //    Pulumi.Log.Info($"SubnetId for AgentPool: {landingZone.SubnetDictionary.Apply(subnet => subnet[aksSubnet])}");
+        //    agentPoolProfiles.VnetSubnetID = Output.Format($"{landingZone.SubnetDictionary.Apply(subnet => subnet[aksSubnet])}");
+        //}
 
         // Create an Azure Kubernetes Cluster
         var managedCluster = new AzureNative.ContainerService.ManagedCluster(clusterName, new()
@@ -155,8 +164,12 @@ class AksLandingZone : Stack
 
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
+        SubnetDictionary = landingZone.SubnetDictionary;
     }
 
     [Output] public Output<string> KubeConfig { get; set; }
     [Output] public Output<string> ClusterName { get; set; }
+    [Output] public Output<ImmutableDictionary<string, object>> SubnetDictionary { get; set; }
+
+
 }
