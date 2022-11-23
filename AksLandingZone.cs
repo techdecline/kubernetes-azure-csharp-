@@ -79,7 +79,7 @@ class AksLandingZone : Stack
         if (!string.IsNullOrEmpty(aksSubnet))
         {
             var subnetId = landingZone.SubnetDictionary.Apply(subnetId => subnetId[aksSubnet]);
-            Output<string> subnetIdString = Output.Format($"{subnetId}");
+            Output<string> subnetIdString = Output.Format($"{subnetId.Apply(sn => sn)}");
             Pulumi.Log.Info($"SubnetId for AgentPool: {subnetIdString}");
             agentPoolProfiles.VnetSubnetID = subnetIdString;
         }
