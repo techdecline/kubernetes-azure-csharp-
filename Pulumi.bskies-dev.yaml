@@ -1,7 +1,7 @@
 config:
   azure-native:location: westeurope
   kubernetes-azure-csharp:kubernetesVersion: 1.24.3
-  kubernetes-azure-csharp:mgmtGroupId: ab937967-4396-4329-93fe-54a4e74f5271
+  kubernetes-azure-csharp:mgmtGroupId: 3d553f91-74c1-4b48-917e-1e333f2f7651
   kubernetes-azure-csharp:nodeVmSize: Standard_D2a_v4
   kubernetes-azure-csharp:numWorkerNodes: "3"
   kubernetes-azure-csharp:prefixForDns: pulumi
