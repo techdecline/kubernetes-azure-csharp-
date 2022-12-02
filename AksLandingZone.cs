@@ -10,6 +10,9 @@ using System;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Immutable;
+using Pulumi.Kubernetes.Core.V1;
+using Pulumi.Kubernetes.Helm;
+using Pulumi.Kubernetes.Helm.V3;
 
 class AksLandingZone : Stack
 {
@@ -166,10 +169,28 @@ class AksLandingZone : Stack
 
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
+
+        Provider = new K8s.Provider("k8s-provider", new K8s.ProviderArgs
+        {
+            KubeConfig = KubeConfig
+        });
+
+        // Deploy Apache Helm Chart
+        var chart = new Chart("apache-chart", new ChartArgs
+        {
+            Chart = "apache",
+            Version = "9.2.2",
+            FetchOptions = new ChartFetchArgs
+            {
+                Repo = "https://charts.bitnami.com/bitnami"
+            }
+        }, new ComponentResourceOptions
+        {
+            Provider = aksCluster.Provider
+        });
     }
 
     [Output] public Output<string> KubeConfig { get; set; }
     [Output] public Output<string> ClusterName { get; set; }
-
-
+    [Output] public K8s.Provider Provider { get; set; }
 }
