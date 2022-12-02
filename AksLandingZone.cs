@@ -170,23 +170,9 @@ class AksLandingZone : Stack
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
 
-        Provider = new K8s.Provider("k8s-provider", new K8s.ProviderArgs
+        Provider = new Pulumi.Kubernetes.Provider("k8s-provider", new Pulumi.Kubernetes.ProviderArgs
         {
             KubeConfig = KubeConfig
-        });
-
-        // Deploy Apache Helm Chart
-        var chart = new Chart("apache-chart", new ChartArgs
-        {
-            Chart = "apache",
-            Version = "9.2.2",
-            FetchOptions = new ChartFetchArgs
-            {
-                Repo = "https://charts.bitnami.com/bitnami"
-            }
-        }, new ComponentResourceOptions
-        {
-            Provider = aksCluster.Provider
         });
     }
 
