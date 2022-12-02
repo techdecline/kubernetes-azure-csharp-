@@ -178,5 +178,5 @@ class AksLandingZone : Stack
 
     [Output] public Output<string> KubeConfig { get; set; }
     [Output] public Output<string> ClusterName { get; set; }
-    [Output] public Pulumi.Kubernetes.Provider Provider { get; set; }
+    [Output] public Output<Pulumi.Kubernetes.Provider> Provider { get; set; }
 }
