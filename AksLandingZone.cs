@@ -167,25 +167,25 @@ class AksLandingZone : Stack
             return Encoding.UTF8.GetString(bytes);
         });
 
-        // Instantiate Kubernetes Provider
-        var k8sProvider = new Pulumi.Kubernetes.Provider("k8s-provider", new Pulumi.Kubernetes.ProviderArgs
-        {
-            KubeConfig = decoded
-        });
+        //// Instantiate Kubernetes Provider
+        //var k8sProvider = new Pulumi.Kubernetes.Provider("k8s-provider", new Pulumi.Kubernetes.ProviderArgs
+        //{
+        //    KubeConfig = decoded
+        //});
 
-        // Deploy Apache Helm Chart
-        var chart = new Chart("apache-chart", new ChartArgs
-        {
-            Chart = "apache",
-            Version = "9.2.2",
-            FetchOptions = new ChartFetchArgs
-            {
-                Repo = "https://charts.bitnami.com/bitnami"
-            }
-        }, new ComponentResourceOptions
-        {
-            Provider = k8sProvider
-        });
+        //// Deploy Apache Helm Chart
+        //var chart = new Chart("apache-chart", new ChartArgs
+        //{
+        //    Chart = "apache",
+        //    Version = "9.2.2",
+        //    FetchOptions = new ChartFetchArgs
+        //    {
+        //        Repo = "https://charts.bitnami.com/bitnami"
+        //    }
+        //}, new ComponentResourceOptions
+        //{
+        //    Provider = k8sProvider
+        //});
 
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
