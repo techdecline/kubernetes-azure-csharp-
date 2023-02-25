@@ -166,7 +166,7 @@ class AksLandingZone : Stack
         });
 
         // Build a Kubeconfig to access the cluster
-        var creds = AzureNative.ContainerService.ListManagedClusterUserCredentials.Invoke(new()
+        var creds = AzureNative.ContainerService.ListManagedClusterAdminCredentials.Invoke(new()
         {
             ResourceGroupName = landingZone.ResourceGroupName,
             ResourceName = managedCluster.Name,
@@ -179,24 +179,24 @@ class AksLandingZone : Stack
         });
 
         //// Instantiate Kubernetes Provider
-        //var k8sProvider = new Pulumi.Kubernetes.Provider("k8s-provider", new Pulumi.Kubernetes.ProviderArgs
-        //{
-        //    KubeConfig = decoded
-        //});
+        var k8sProvider = new Pulumi.Kubernetes.Provider("k8s-provider", new Pulumi.Kubernetes.ProviderArgs
+        {
+           KubeConfig = decoded
+        });
 
-        //// Deploy Apache Helm Chart
-        //var chart = new Chart("apache-chart", new ChartArgs
-        //{
+        // Deploy Apache Helm Chart
+        // var chart = new Chart("apache-chart", new ChartArgs
+        // {
         //    Chart = "apache",
         //    Version = "9.2.2",
         //    FetchOptions = new ChartFetchArgs
         //    {
         //        Repo = "https://charts.bitnami.com/bitnami"
         //    }
-        //}, new ComponentResourceOptions
-        //{
+        // }, new ComponentResourceOptions
+        // {
         //    Provider = k8sProvider
-        //});
+        // });
 
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
