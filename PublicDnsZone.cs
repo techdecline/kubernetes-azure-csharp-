@@ -11,6 +11,7 @@ class PublicDnsZone
             ZoneName = dnsZoneName,
             ResourceGroupName = resourceGroupName,
             ZoneType = AzureNative.Network.ZoneType.Public,
+            Location = "global"
         });
 
         DnsZoneId = dnsZone.Id;

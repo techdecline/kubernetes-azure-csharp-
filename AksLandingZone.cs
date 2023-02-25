@@ -32,6 +32,7 @@ class AksLandingZone : Stack
         var nodeVmSize = projCfg.Get("nodeVmSize") ?? "Standard_DS2_v2";
         var location = configAzureNative.Require("location");
         var commonArgs = new LandingZoneArgs(Pulumi.Deployment.Instance.StackName, location, "aks");
+        var dnsZoneName = projCfg.Get("dnsZoneName") ?? null;
 
         // The next two configuration values are required (no default can be provided)
         var mgmtGroupId = projCfg.Require("mgmtGroupId");
@@ -49,6 +50,16 @@ class AksLandingZone : Stack
         // Instantiate LandingZone Class for Resource Group and Virtual Network
         var landingZone = new LandingZone(resourceGroupName, vnetCidr, vnetName, subnetArr);
         var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, landingZone.ResourceGroupName);
+
+        if (null == dnsZoneName) 
+        {
+            Pulumi.Log.Info("No DNS Zone Name set in Pulumi Config");
+        }
+        else
+        {
+            var dnsZoneId = new PublicDnsZone(dnsZoneName,landingZone.ResourceGroupName);
+        }
+
 
         // look for aks subnet by name
         string aksSubnet = string.Empty;

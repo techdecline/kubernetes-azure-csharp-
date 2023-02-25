@@ -354,3 +354,4 @@ MigrationBackup/
 
 .devcontainer/
 .vscode/
+Set-Environment.ps1
