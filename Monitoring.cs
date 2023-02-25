@@ -16,7 +16,6 @@ class Monitoring
                 Name = "PerGB2018",
             }
         });
-
         // Create Managed Grafana Dashboard
         var grafana = new AzureNative.Dashboard.Grafana(managedGrafanaName, new()
         {

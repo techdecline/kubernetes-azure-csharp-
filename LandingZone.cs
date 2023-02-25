@@ -22,7 +22,6 @@ class LandingZone
             },
             ResourceGroupName = resourceGroup.Name,
         });
-
         ImmutableDictionary<string, Output<string>>.Builder outputBuilder = ImmutableDictionary.CreateBuilder<string, Output<string>>();
 
         foreach (var subnet in subnetConfig.EnumerateArray())
