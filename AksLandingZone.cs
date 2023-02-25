@@ -18,6 +18,18 @@ class AksLandingZone : Stack
 {
     public AksLandingZone()
     {
+        // Register Feature
+        var subscriptionFeatureRegistration = new AzureNative.Features.SubscriptionFeatureRegistration("aksPreview", new()
+        {
+            FeatureName = "EnablePodIdentityPreview",
+            Properties = new AzureNative.Features.Inputs.SubscriptionFeatureRegistrationPropertiesArgs
+            {
+                Description = "Enable pod identity preview feature",
+                ShouldFeatureDisplayInPortal = false,
+                State = "Registered",
+            },
+            ProviderNamespace = "Microsoft.ContainerService",
+        });
         // Enable Debugger
         //while (!Debugger.IsAttached)
         //{
@@ -140,6 +152,11 @@ class AksLandingZone : Stack
             {
                 Type = AzureNative.ContainerService.ResourceIdentityType.SystemAssigned,
             },
+            PodIdentityProfile = new AzureNative.ContainerService.Inputs.ManagedClusterPodIdentityProfileArgs
+            {
+                AllowNetworkPluginKubenet = true,
+                Enabled = true,
+            },
             KubernetesVersion = k8sVersion,
             LinuxProfile = new AzureNative.ContainerService.Inputs.ContainerServiceLinuxProfileArgs
             {
@@ -163,6 +180,8 @@ class AksLandingZone : Stack
                 DnsServiceIP = "10.96.0.10",
             },
             ResourceGroupName = landingZone.ResourceGroupName,
+        },new CustomResourceOptions{
+            DependsOn = subscriptionFeatureRegistration
         });
 
         // Build a Kubeconfig to access the cluster
