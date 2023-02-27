@@ -63,15 +63,18 @@ class AksLandingZone : Stack
         var landingZone = new LandingZone(resourceGroupName, vnetCidr, vnetName, subnetArr);
         var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, landingZone.ResourceGroupName);
 
+        // Setup DNS Integration using External DNS
         if (null == dnsZoneName) 
         {
             Pulumi.Log.Info("No DNS Zone Name set in Pulumi Config");
         }
         else
-        {
+        {   Pulumi.Log.Info("External DNS will be setup");
             var dnsZoneId = new PublicDnsZone(dnsZoneName,landingZone.ResourceGroupName);
+            var azureHelper = new AzureHelper(configAzureNative.Get("subscriptionId") ?? string.Empty);
+            string roleDefinitionId = azureHelper.GetRoleByName("DNS Zone Contributor");
+            var managedIdentity = new ManagedIdentity(landingZone.ResourceGroupName, "externalDns", roleDefinitionId, dnsZoneId.DnsZoneId);
         }
-
 
         // look for aks subnet by name
         string aksSubnet = string.Empty;
@@ -105,8 +108,6 @@ class AksLandingZone : Stack
         if (!string.IsNullOrEmpty(aksSubnet))
         {
             var subnetId = landingZone.SubnetDictionary.Apply(subnetId => subnetId[aksSubnet]);
-            //Output<string> subnetIdString = Output.Format($"{subnetId.Apply(sn => sn)}");
-            //Pulumi.Log.Info($"SubnetId for AgentPool: {subnetIdString}");
             agentPoolProfiles.VnetSubnetID = subnetId;
         }
 
