@@ -38,11 +38,14 @@ class LandingZone
 
         // Map outputs
         ResourceGroupName = resourceGroup.Name;
+        ResourceGroupId = resourceGroup.Id;
         VirtualNetworkId = virtualNetwork.Id;
         SubnetDictionary = Output.Create(outputBuilder.ToImmutable());
     }
 
     [Output] public Output<string> ResourceGroupName { get; set; }
+    [Output] public Output<string> ResourceGroupId { get; set; }
+
     [Output] public Output<string> VirtualNetworkId { get; set; }
     [Output] public Output<ImmutableDictionary<string, Output<string>>> SubnetDictionary { get; set; }
 }

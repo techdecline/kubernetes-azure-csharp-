@@ -12,9 +12,9 @@ class ManagedIdentity
 
         if (roleDefinitionId != string.Empty)
         {
-            var roleAssignmentGuid = new Pulumi.Random.RandomUuid("guidRoleAssignment");
+            var roleAssignmentGuid = new Pulumi.Random.RandomUuid($"guidRoleAssignment{managedIdentityName}");
 
-            var roleAssignment = new AzureNative.Authorization.RoleAssignment("roleAssignment", new()
+            var roleAssignment = new AzureNative.Authorization.RoleAssignment($"roleAssignment{managedIdentityName}", new()
             {
                 PrincipalId = identity.PrincipalId,
                 PrincipalType = "ServicePrincipal",
@@ -37,6 +37,4 @@ class ManagedIdentity
     [Output] public Output<string> PrincipalId { get; set; }
     [Output] public Output<string> Id { get; set; }
     [Output] public Output<string> RoleAssignmentId { get; set; }
-
-
 }   

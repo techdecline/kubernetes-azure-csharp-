@@ -58,23 +58,12 @@ class AksLandingZone : Stack
         var clusterName = $"aks-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
         var lawName = $"law-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
         var managedGrafanaName = $"grf-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+        var agwName = $"agw-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
 
         // Instantiate LandingZone Class for Resource Group and Virtual Network
         var landingZone = new LandingZone(resourceGroupName, vnetCidr, vnetName, subnetArr);
         var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, landingZone.ResourceGroupName);
 
-        // Setup DNS Integration using External DNS
-        if (null == dnsZoneName) 
-        {
-            Pulumi.Log.Info("No DNS Zone Name set in Pulumi Config");
-        }
-        else
-        {   Pulumi.Log.Info("External DNS will be setup");
-            var dnsZoneId = new PublicDnsZone(dnsZoneName,landingZone.ResourceGroupName);
-            var azureHelper = new AzureHelper(configAzureNative.Get("subscriptionId") ?? string.Empty);
-            string roleDefinitionId = azureHelper.GetRoleByName("DNS Zone Contributor");
-            var managedIdentity = new ManagedIdentity(landingZone.ResourceGroupName, "externalDns", roleDefinitionId, dnsZoneId.DnsZoneId);
-        }
 
         // look for aks subnet by name
         string aksSubnet = string.Empty;
@@ -87,6 +76,53 @@ class AksLandingZone : Stack
                 break;
             }
         }
+
+        var podIdentityProfile = new AzureNative.ContainerService.Inputs.ManagedClusterPodIdentityProfileArgs
+        {
+            AllowNetworkPluginKubenet = true,
+            Enabled = true,
+        };
+
+
+        // Create Identity for Cluster
+        var azureHelper = new AzureHelper(configAzureNative.Get("subscriptionId") ?? string.Empty);
+        string roleDefinitionManagedIdentityOperatorId = azureHelper.GetRoleByName("Managed Identity Operator");
+        var clusterIdentity = new ManagedIdentity(landingZone.ResourceGroupName, "clusterIdentity", roleDefinitionManagedIdentityOperatorId, landingZone.ResourceGroupId);
+        
+        // Setup DNS Integration using External DNS
+        var currentConfig = Output.Create(AzureNative.Authorization.GetClientConfig.InvokeAsync());
+        Pulumi.InputMap<string> secretStringData = new Pulumi.InputMap<string>
+        {
+            {"tenantId", currentConfig.Apply(q=>q.TenantId)},
+            {"subscriptionId", currentConfig.Apply(q=>q.SubscriptionId)},
+            {"resourceGroup", landingZone.ResourceGroupName},
+            {"useManagedIdentityExtension","true"},
+        };
+        if (null == dnsZoneName) 
+        {
+            Pulumi.Log.Info("No DNS Zone Name set in Pulumi Config");
+        }
+        else
+        {   
+            Pulumi.Log.Info("External DNS will be setup on Azure");
+            var dnsZoneId = new PublicDnsZone(dnsZoneName,landingZone.ResourceGroupName);
+            string roleDefinitionId = azureHelper.GetRoleByName("DNS Zone Contributor");
+            var managedIdentity = new ManagedIdentity(landingZone.ResourceGroupName, "externalDns", roleDefinitionId, dnsZoneId.DnsZoneId);
+            podIdentityProfile.UserAssignedIdentities.Add(new AzureNative.ContainerService.Inputs.ManagedClusterPodIdentityArgs 
+            {
+
+                Identity = new AzureNative.ContainerService.Inputs.UserAssignedIdentityArgs {
+                    ClientId = managedIdentity.ClientId,
+                    ObjectId = managedIdentity.PrincipalId,
+                    ResourceId = managedIdentity.Id,
+                },
+                Name = "external-dns",
+                BindingSelector = "external-dns",
+                Namespace = "default"
+            });
+            secretStringData.Add("userAssignedIdentityID", managedIdentity.ClientId);
+        }
+
 
         // Agent Pool 
         var agentPoolProfiles = new AzureNative.ContainerService.Inputs.ManagedClusterAgentPoolProfileArgs
@@ -120,20 +156,29 @@ class AksLandingZone : Stack
                 Managed = true,
                 AdminGroupObjectIDs = new[]
                 {
-                mgmtGroupId,
-            },
+                    mgmtGroupId,
+                },
             },
             AddonProfiles =
-        {
-            { "omsagent", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
             {
-                Config =
+                { "omsagent", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
                 {
-                    { "logAnalyticsWorkspaceResourceID", monitoring.LogAnalyticsWorkspaceId },
-                },
-                Enabled = true,
-            } },
-        },
+                    Config =
+                    {
+                        { "logAnalyticsWorkspaceResourceID", monitoring.LogAnalyticsWorkspaceId },
+                    },
+                    Enabled = true,
+                } },
+                {
+                    "ingress", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
+                    {
+                        Config = 
+                        {
+                            { "", "agw_id" },
+                        }
+                    }
+                }
+            },
             // Use multiple agent/node pool profiles to distribute nodes across subnets
             AgentPoolProfiles = agentPoolProfiles,
 
@@ -151,13 +196,17 @@ class AksLandingZone : Stack
             EnableRBAC = true,
             Identity = new AzureNative.ContainerService.Inputs.ManagedClusterIdentityArgs
             {
-                Type = AzureNative.ContainerService.ResourceIdentityType.SystemAssigned,
+                Type = AzureNative.ContainerService.ResourceIdentityType.UserAssigned,
+                UserAssignedIdentities = clusterIdentity.Id.Apply(id =>
+                {
+                    var im = new Dictionary<string, object>
+                    {
+                        { id, new Dictionary<string, object>() }
+                    };
+                    return im;
+                })
             },
-            PodIdentityProfile = new AzureNative.ContainerService.Inputs.ManagedClusterPodIdentityProfileArgs
-            {
-                AllowNetworkPluginKubenet = true,
-                Enabled = true,
-            },
+            PodIdentityProfile = podIdentityProfile,
             KubernetesVersion = k8sVersion,
             LinuxProfile = new AzureNative.ContainerService.Inputs.ContainerServiceLinuxProfileArgs
             {
@@ -204,19 +253,39 @@ class AksLandingZone : Stack
            KubeConfig = decoded
         });
 
-        // Deploy Apache Helm Chart
-        // var chart = new Chart("apache-chart", new ChartArgs
-        // {
-        //    Chart = "apache",
-        //    Version = "9.2.2",
-        //    FetchOptions = new ChartFetchArgs
-        //    {
-        //        Repo = "https://charts.bitnami.com/bitnami"
-        //    }
-        // }, new ComponentResourceOptions
-        // {
-        //    Provider = k8sProvider
-        // });
+        // Setup DNS Integration using External DNS
+        if (null == dnsZoneName) 
+        {
+            Pulumi.Log.Info("No DNS Zone Name set in Pulumi Config");
+        }
+        else
+        {   
+            Pulumi.Log.Info("External DNS will be setup on Kubernetes");
+
+            // var ns = new Namespace("externaldns", new Pulumi.Kubernetes.Types.Inputs.Core.V1.NamespaceArgs
+            // {
+            //     Metadata = new Pulumi.Kubernetes.Types.Inputs.Meta.V1.ObjectMetaArgs 
+            //     {
+            //         Name = "externaldns"
+            //     }
+            // }, new CustomResourceOptions
+            // {
+            //     Provider = k8sProvider
+            // });
+
+            var secret = new Secret("externalDnsSecret", new Pulumi.Kubernetes.Types.Inputs.Core.V1.SecretArgs
+            {
+                Metadata = new Pulumi.Kubernetes.Types.Inputs.Meta.V1.ObjectMetaArgs 
+                {
+                    Name = "azuresecret",
+                    // Namespace = Output.Format($"{ns.Metadata.Apply(name => name.Name)}"),
+                },
+                StringData = secretStringData,
+            }, new CustomResourceOptions
+            {
+                Provider = k8sProvider
+            });
+        }
 
         KubeConfig = decoded;
         ClusterName = managedCluster.Name;
