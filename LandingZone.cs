@@ -31,7 +31,7 @@ class LandingZone
                 AddressPrefix = subnet.GetProperty("cidr").GetString(),
                 ResourceGroupName = resourceGroup.Name,
                 VirtualNetworkName = virtualNetwork.Name,
-            });
+            }, new CustomResourceOptions { DeleteBeforeReplace = true });
 
             outputBuilder.Add(subnet.GetProperty("name").GetString(), subnetObj.Id.Apply(id => id));
         }

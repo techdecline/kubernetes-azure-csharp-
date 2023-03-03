@@ -59,11 +59,26 @@ class AksLandingZone : Stack
         var lawName = $"law-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
         var managedGrafanaName = $"grf-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
         var agwName = $"agw-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
+        var pipName = $"pip-{commonArgs.Application}-{commonArgs.LocationShort}-{commonArgs.EnvironmentShort}";
 
         // Instantiate LandingZone Class for Resource Group and Virtual Network
         var landingZone = new LandingZone(resourceGroupName, vnetCidr, vnetName, subnetArr);
         var monitoring = new Monitoring(lawName, managedGrafanaName, mgmtGroupId, landingZone.ResourceGroupName);
 
+        // Looking for GatewaySubnet
+        string gatewaySubnet = string.Empty;
+        foreach (var subnet in subnetArr.EnumerateArray())
+        {
+            if (subnet.GetProperty("name").GetString().Contains("agw"))
+            {
+                Pulumi.Log.Info($"Subnet {subnet.GetProperty("name").GetString()} will be used for AGW");
+                gatewaySubnet = subnet.GetProperty("name").GetString();
+                break;
+            }
+        }
+
+        // Create Application Gateway
+        // var agw = new AksApplicationGateway(agwName,pipName,clusterName,landingZone.ResourceGroupName,landingZone.ResourceGroupId, landingZone.SubnetDictionary.Apply(subnetId => subnetId[gatewaySubnet]));
 
         // look for aks subnet by name
         string aksSubnet = string.Empty;
@@ -169,15 +184,16 @@ class AksLandingZone : Stack
                     },
                     Enabled = true,
                 } },
-                {
-                    "ingress", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
-                    {
-                        Config = 
-                        {
-                            { "", "agw_id" },
-                        }
-                    }
-                }
+                // {
+                //     "ingressApplicationGateway", new AzureNative.ContainerService.Inputs.ManagedClusterAddonProfileArgs
+                //     {
+                //         Config = 
+                //         {
+                //             { "applicationGatewayId", agw.ApplicationGatewayId },
+                //         },
+                //         Enabled = true
+                //     }
+                // }
             },
             // Use multiple agent/node pool profiles to distribute nodes across subnets
             AgentPoolProfiles = agentPoolProfiles,
@@ -287,11 +303,11 @@ class AksLandingZone : Stack
             });
         }
 
-        KubeConfig = decoded;
+        // KubeConfig = decoded;
         ClusterName = managedCluster.Name;
 
     }
 
-    [Output] public Output<string> KubeConfig { get; set; }
+    // [Output] public Output<string> KubeConfig { get; set; }
     [Output] public Output<string> ClusterName { get; set; }
 }
