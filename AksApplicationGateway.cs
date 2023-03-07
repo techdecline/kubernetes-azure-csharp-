@@ -1,9 +1,10 @@
 using Pulumi;
 using AzureNative = Pulumi.AzureNative;
+using AzureClassic = Pulumi.Azure;
 
 class AksApplicationGateway
 {
-    public AksApplicationGateway(string ApplicationGatewayName, string PublicIpName, string AksClusterName, Input<string>ResourceGroupName, Input<string>ResourceGroupId, Input<string> AgwSubnetId)
+    public AksApplicationGateway(string ApplicationGatewayName, string PublicIpName, string AksClusterName, Input<string>ResourceGroupName, Input<string> AgwSubnetId)
     {
         // Name Generation
         string backendAddressPoolName = $"{AksClusterName}-01-agic-beap-0";
@@ -14,23 +15,6 @@ class AksApplicationGateway
         string httpSettingName = $"{AksClusterName}-01-agic-be-htst-0";
         string listenerNamePublic = $"{AksClusterName}-01-agic-httplstn-0";
         string requestRoutingRuleName = $"{AksClusterName}-01-agic-rqrt-0";
-
-        // Fetch RG ID
-        var resourceGroup = AzureNative.Resources.GetResourceGroup.Invoke(new AzureNative.Resources.GetResourceGroupInvokeArgs
-        {
-            ResourceGroupName = ResourceGroupName
-        });
-
-        // Agw Params
-        var frontendPorts = new InputList<AzureNative.Network.Inputs.ApplicationGatewayFrontendPortArgs>{};
-        frontendPorts.Add(new AzureNative.Network.Inputs.ApplicationGatewayFrontendPortArgs {
-            Name = frontendPortName,
-            Port = 80
-        });
-        frontendPorts.Add(new AzureNative.Network.Inputs.ApplicationGatewayFrontendPortArgs {
-            Name = tlsFrontendPortName,
-            Port = 443
-        });
 
         // Public IP 
         var publicIp = new AzureNative.Network.PublicIPAddress(PublicIpName, new AzureNative.Network.PublicIPAddressArgs
@@ -43,101 +27,91 @@ class AksApplicationGateway
             PublicIPAllocationMethod = "Static"
         });
         PublicIpId = publicIp.Id;
-        var agw = new AzureNative.Network.ApplicationGateway(ApplicationGatewayName,new AzureNative.Network.ApplicationGatewayArgs
+        
+        var agw = new AzureClassic.Network.ApplicationGateway(ApplicationGatewayName, new()
         {
-            ApplicationGatewayName = ApplicationGatewayName,
             ResourceGroupName = ResourceGroupName,
-            Sku = new AzureNative.Network.Inputs.ApplicationGatewaySkuArgs
+            Sku = new AzureClassic.Network.Inputs.ApplicationGatewaySkuArgs
             {
-                Name = "WAF_v2",
-                Tier = "WAF_v2",
-                Capacity = 3,
+                Name = "WAF_V2",
+                Tier = "WAF_V2",
+                Capacity = 2,
             },
-            GatewayIPConfigurations = new AzureNative.Network.Inputs.ApplicationGatewayIPConfigurationArgs {
-                Name = "appGatewayIpConfig",
-                Subnet =new AzureNative.Network.Inputs.SubResourceArgs {
-                    Id = AgwSubnetId
-                }
+            GatewayIpConfigurations = new[]
+            {
+                new AzureClassic.Network.Inputs.ApplicationGatewayGatewayIpConfigurationArgs
+                {
+                    Name = "my-gateway-ip-configuration",
+                    SubnetId = AgwSubnetId,
+                },
             },
             FrontendPorts = new[]
             {
-                new AzureNative.Network.Inputs.ApplicationGatewayFrontendPortArgs
-                {
-                    Name = tlsFrontendPortName,
-                    Port = 443,
-                },
-                new AzureNative.Network.Inputs.ApplicationGatewayFrontendPortArgs
+                new AzureClassic.Network.Inputs.ApplicationGatewayFrontendPortArgs
                 {
                     Name = frontendPortName,
                     Port = 80,
                 },
             },
-            FrontendIPConfigurations = new[]
+            FrontendIpConfigurations = new[]
             {
-                new AzureNative.Network.Inputs.ApplicationGatewayFrontendIPConfigurationArgs
+                new AzureClassic.Network.Inputs.ApplicationGatewayFrontendIpConfigurationArgs
                 {
                     Name = frontendPublicIpConfigurationName,
-                    PublicIPAddress = new AzureNative.Network.Inputs.SubResourceArgs
-                    {
-                        Id = publicIp.Id,
-                    },
+                    PublicIpAddressId = PublicIpId,
                 },
             },
             BackendAddressPools = new[]
             {
-                new AzureNative.Network.Inputs.ApplicationGatewayBackendAddressPoolArgs
+                new AzureClassic.Network.Inputs.ApplicationGatewayBackendAddressPoolArgs
                 {
                     Name = backendAddressPoolName,
                 },
             },
-            BackendHttpSettingsCollection = new[]
+            BackendHttpSettings = new[]
             {
-                new AzureNative.Network.Inputs.ApplicationGatewayBackendHttpSettingsArgs
+                new AzureClassic.Network.Inputs.ApplicationGatewayBackendHttpSettingArgs
                 {
+                    Name = httpSettingName,
                     CookieBasedAffinity = "Disabled",
-                    Name = "appgwbhs",
+                    Path = "/path1/",
                     Port = 80,
                     Protocol = "Http",
-                    RequestTimeout = 30,
+                    RequestTimeout = 60,
                 },
             },
-            HttpListeners = new AzureNative.Network.Inputs.ApplicationGatewayHttpListenerArgs 
+            HttpListeners = new[]
             {
-                Name = listenerNamePublic,
-                Protocol = "Http",
-                FrontendIPConfiguration = new AzureNative.Network.Inputs.SubResourceArgs
+                new AzureClassic.Network.Inputs.ApplicationGatewayHttpListenerArgs
                 {
-                    Id = ResourceGroupId.Apply(id => $"{id}/providers/Microsoft.Network/applicationGateways/{ApplicationGatewayName}/frontendIPConfigurations/{frontendPublicIpConfigurationName}")
+                    Name = listenerNamePublic,
+                    FrontendIpConfigurationName = frontendPublicIpConfigurationName,
+                    FrontendPortName = frontendPortName,
+                    Protocol = "Http",
                 },
-                FrontendPort = new AzureNative.Network.Inputs.SubResourceArgs
-                {
-                    Id = ResourceGroupId.Apply(id => $"{id}/providers/Microsoft.Network/applicationGateways/{ApplicationGatewayName}/frontendPorts/{frontendPortName}")
-                } 
             },
-            RequestRoutingRules = new AzureNative.Network.Inputs.ApplicationGatewayRequestRoutingRuleArgs
+            RequestRoutingRules = new[]
             {
-                Name = requestRoutingRuleName,
-                BackendAddressPool = new AzureNative.Network.Inputs.SubResourceArgs
+                new AzureClassic.Network.Inputs.ApplicationGatewayRequestRoutingRuleArgs
                 {
-                    Id = ResourceGroupId.Apply(id => $"{id}/providers/Microsoft.Network/applicationGateways/{ApplicationGatewayName}/backendAddressPools/{backendAddressPoolName}")
+                    Name = requestRoutingRuleName,
+                    RuleType = "Basic",
+                    HttpListenerName = listenerNamePublic,
+                    BackendAddressPoolName = backendAddressPoolName,
+                    BackendHttpSettingsName = httpSettingName,
+                    Priority = 1
                 },
-                BackendHttpSettings = new AzureNative.Network.Inputs.SubResourceArgs
-                {
-                    Id = ResourceGroupId.Apply(id => $"{id}/providers/Microsoft.Network/applicationGateways/{ApplicationGatewayName}/backendHttpSettingsCollection/{httpSettingName}")
-                },
-                HttpListener = new AzureNative.Network.Inputs.SubResourceArgs
-                {
-                    Id = ResourceGroupId.Apply(id => $"{id}/providers/Microsoft.Network/applicationGateways/{ApplicationGatewayName}/httpListeners/{listenerNamePublic}")
-                },
-                
             },
-            WebApplicationFirewallConfiguration = new AzureNative.Network.Inputs.ApplicationGatewayWebApplicationFirewallConfigurationArgs
+            WafConfiguration = new AzureClassic.Network.Inputs.ApplicationGatewayWafConfigurationArgs
             {
                 Enabled = true,
                 FirewallMode = "Prevention",
                 RuleSetType = "OWASP",
-                RuleSetVersion = "3.0"
-            },
+                RuleSetVersion = "3.0",
+            }
+        }, new CustomResourceOptions
+        {
+            IgnoreChanges = {"sku", "tags"}
         });
 
         PublicIpId = publicIp.Id;

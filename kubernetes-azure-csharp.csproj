@@ -12,6 +12,7 @@
     <PackageReference Include="Azure.ResourceManager" Version="1.4.0" />
     <PackageReference Include="Azure.ResourceManager.Authorization" Version="1.0.1" />
     <PackageReference Include="Pulumi" Version="3.*" />
+    <PackageReference Include="Pulumi.Azure" Version="5.36.0" />
     <PackageReference Include="Pulumi.AzureAD" Version="5.31.0" />
     <PackageReference Include="Pulumi.AzureNative" Version="1.*" />
     <PackageReference Include="Pulumi.Kubernetes" Version="3.22.2" />
